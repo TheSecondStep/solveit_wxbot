@@ -1,0 +1,72 @@
+# solveit_wxbot
+
+WeChat bot bridging Enterprise WeChat (WeCom) to Solveit AI. Users chat in personal WeChat (via WeCom's WeChat Plugin) → webhook receives messages → routes to per-user Solveit dialogs → sends AI replies back.
+
+## Architecture
+
+```
+WeChat user ──► WeCom server ──► POST /wecom (webhook) ──► process_message() ──► dialoghelper ──► AI reply ──► WeCom send API ──► WeChat user
+```
+
+Request flow: WeCom encrypts messages with AES-256-CBC → app verifies signature & decrypts → deduplicates retries → creates/reuses per-user Solveit dialog → sends prompt via `dialoghelper.add_msg` → strips Markdown from reply → chunks & sends via WeCom API.
+
+## Modules (4 files, ~180 LOC total)
+
+### config.py (source: nbs/00_config.ipynb)
+Environment-based config. All WeCom credentials from env vars (`WECOM_CORP_ID`, `WECOM_SECRET`, `WECOM_AGENT_ID`, `WECOM_TOKEN`, `WECOM_AES_KEY`). Constants: `CHUNK_SIZE=680` (max chars per WeCom segment), `DEDUP_WINDOW=60` (seconds), `TOKEN_BUFFER=300` (token refresh margin).
+
+### crypto.py (source: nbs/01_crypto.ipynb)
+WeCom message encryption/decryption. AES-256-CBC with PKCS#7 padding (block size 32). Key functions:
+- `msg_sig(*parts)` → SHA1 signature for verification
+- `decrypt(encrypted)` → `(xml_text, corp_id)` 
+- `encrypt(xml)` → Base64 ciphertext
+
+Message format: `16-byte random | 4-byte big-endian length | message | corp_id`, then PKCS#7 pad + AES-CBC encrypt.
+
+### api.py (source: nbs/02_api.ipynb)
+WeCom API client. Token auto-refresh with in-memory cache. Key functions:
+- `_strip_md(s)` — removes code blocks, inline code, bold/italic, headings, bullets, links
+- `_get_access_token()` — async, cached, refreshes 5min before expiry
+- `send_text(user_id, text)` — async, strips Markdown, chunks into CHUNK_SIZE segments
+
+### dialog.py (source: nbs/03_dialog.ipynb)
+Per-user Solveit dialog management. Dialogs live at `/wecom/users/{user_id}/chat`. Key functions:
+- `process_message(user_id, content)` — main router:
+  - `/new` command → archives current dialog, creates fresh one
+  - anything else → ensures dialog exists via `call_endpa('create_dialog_', ...)`, sends prompt via `add_msg(..., run=True, wait=True)`, sends reply
+- `archive_dialog(user_id)` — AI-generates ≤10-char summary, stops kernel, moves .ipynb to `wecom/users/{user_id}/archive/{timestamp}_{summary}.ipynb`
+
+### app.py (source: nbs/04_app.ipynb)
+FastHTML webhook + uvicorn server. Routes:
+- `GET /wecom` — WeCom URL verification (decrypt echostr)
+- `POST /wecom` — receives encrypted messages, verifies signature, decrypts, deduplicates by MsgId, fires `asyncio.create_task(process_message(...))` for text messages
+- `start_bot()` → launches uvicorn in daemon thread, returns server
+- `stop_bot(server)` → sets `should_exit = True`
+
+Dedup: in-memory dict `{MsgId: timestamp}`, entries expire after `DEDUP_WINDOW` seconds.
+
+## Dependencies
+cryptography, httpx, uvicorn, python-fasthtml, dialoghelper
+
+## Key integration points
+- **dialoghelper**: `call_endpa` for kernel/dialog lifecycle, `add_msg` for sending prompts and getting AI replies
+- **Solveit data dir**: `/app/data/` — dialogs stored as .ipynb files
+- **WeCom API**: `qyapi.weixin.qq.com` for token + message send
+- **CRAFT/TEMPLATE**: No project-level CRAFT.ipynb yet. Per-user dialogs inherit from any CRAFT in `/wecom/` or parent folders.
+
+## Deployment
+Designed to run inside a Solveit instance. For auto-start: place env setup + `start_bot()` in an AUTORUN dialog. Server listens on `0.0.0.0:8000`.
+
+## File layout
+```
+solveit_wxbot/
+├── nbs/                    # nbdev source notebooks (00-04 + index)
+├── solveit_wxbot/          # auto-generated package
+│   ├── config.py
+│   ├── crypto.py
+│   ├── api.py
+│   ├── dialog.py
+│   └── app.py
+├── pyproject.toml
+└── llms.txt
+```

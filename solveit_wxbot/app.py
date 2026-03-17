@@ -40,6 +40,31 @@ def _parse_xml(
 # %% ../nbs/04_app.ipynb #1b2e5e02
 _app, _rt = fast_app(port=8000)
 
+def _verify_and_decrypt(body, sig, ts, nonce):
+    "Verify signature and decrypt WeCom message body, returning XML text."
+    outer = _parse_xml(body.decode('utf-8'))
+    enc = outer.get('Encrypt', '')
+    if msg_sig(TOKEN, ts, nonce, enc) != sig: return None
+    xml_text, corp_id = decrypt(enc)
+    return xml_text
+
+def _extract_msg(xml_text):
+    "Extract (user_id, content, msg_id) from decrypted XML"
+    msg = _parse_xml(xml_text)
+    msg_type = msg.get('MsgType')
+    if not msg_type:
+        return None
+    else:
+        if msg_type == 'text':
+            return msg.get('FromUserName',''), msg.get('Content',''), msg.get('MsgId','')
+        elif msg_type == 'image':
+            return msg.get('FromUserName',''), '图片url: ' + msg.get('PicUrl',''), msg.get('MsgId','')
+        elif msg_type == 'link':
+            return msg.get('FromUserName',''), '链接: ' + msg.get('Url',''), msg.get('MsgId','')
+        else:
+            return msg.get('FromUserName',''), f'原样输出文字：当前不支持{msg_type}类型消息', msg.get('MsgId','')
+    
+
 @_rt('/wecom', methods=['GET'])
 async def _wecom_verify(request: Request):
     p = request.query_params
@@ -55,17 +80,15 @@ async def _wecom_receive(request: Request):
     sig, ts, nonce = p.get('msg_signature',''), p.get('timestamp',''), p.get('nonce','')
     body = await request.body()
     try:
-        outer = _parse_xml(body.decode('utf-8'))
-        enc = outer.get('Encrypt', '')
-        if msg_sig(TOKEN, ts, nonce, enc) != sig:
+        xml_text = _verify_and_decrypt(body, sig, ts, nonce)
+        if not xml_text:
             print(f'❌ 签名验证失败')
             return PlainTextResponse('signature mismatch', status_code=403)
-        xml_text, corp_id = decrypt(enc)
-        msg = _parse_xml(xml_text)
-        msg_type, mid = msg.get('MsgType',''), msg.get('MsgId','')
-        user_id, content = msg.get('FromUserName',''), msg.get('Content','')
-        if msg_type == 'text' and content and not _is_dup(mid):
-            asyncio.create_task(process_message(user_id, content))
+        result = _extract_msg(xml_text)
+        if result:
+            user_id, content, mid = result
+            if content and not _is_dup(mid):
+                asyncio.create_task(process_message(user_id, content))
     except Exception as e:
         print(f'❌ 解析失败: {e}')
     return PlainTextResponse('')
