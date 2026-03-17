@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "solveit_wxbot"
+  site-url: "https://TheSecondStep.github.io/solveit_wxbot"
+  description: "WeChat bot powered by Solveit AI — multi-user dialog management via Enterprise WeChat webhook"
+  repo-branch: main
+  repo-url: "https://github.com/TheSecondStep/solveit_wxbot"

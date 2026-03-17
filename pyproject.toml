@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solveit_wxbot"
+dynamic = ["version"]
+description = "WeChat bot powered by Solveit AI — multi-user dialog management via Enterprise WeChat webhook"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "TheSecondStep", email = "c1697760747@gmail.com"}]
+keywords = ['nbdev']
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+    "cryptography",
+    "httpx",
+    "uvicorn",
+    "python-fasthtml",
+    "dialoghelper",
+]
+
+[project.urls]
+Repository = "https://github.com/TheSecondStep/solveit_wxbot"
+Documentation = "https://TheSecondStep.github.io/solveit_wxbot/"
+
+[project.entry-points.nbdev]
+solveit_wxbot = "solveit_wxbot._modidx:d"
+
+[tool.setuptools.dynamic]
+version = {attr = "solveit_wxbot.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["solveit_wxbot"]
+
+[tool.nbdev]
