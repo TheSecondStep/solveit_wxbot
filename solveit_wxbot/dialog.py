@@ -34,14 +34,14 @@ async def archive_dialog(
 ) -> bool:
     "Generate an AI summary, stop the dialog, and move its .ipynb to the archive folder."
     dlg_path = f'/wecom/users/{user_id}/chat'
-    src = DATAPATH / f'{dlg_path.lstrip("/")}.ipynb'
+    src = _DATAPATH / f'{dlg_path.lstrip("/")}.ipynb'
     if not src.exists(): return False
 
     summary = await _get_summary(dlg_path)
     await call_endpa('stop_kernel_', dname=dlg_path, name=dlg_path.lstrip('/'), json=True)
 
     ts = datetime.now().strftime('%Y%m%d_%H%M')
-    dest_dir = DATAPATH / f'wecom/users/{user_id}/archive'
+    dest_dir = _DATAPATH / f'wecom/users/{user_id}/archive'
     dest_dir.mkdir(parents=True, exist_ok=True)
     shutil.move(str(src), str(dest_dir / f'{ts}_{summary}.ipynb'))
     return True
@@ -53,7 +53,7 @@ async def process_message(
 ):
     "Route messages: '/new' archives and resets the session; anything else is forwarded to AI."
     dlg_path = f'/wecom/users/{user_id}/chat'
-    src = DATAPATH / f'{dlg_path.lstrip("/")}.ipynb'
+    src = _DATAPATH / f'{dlg_path.lstrip("/")}.ipynb'
     try:
         if content.strip() == '/new':
             if src.exists():
@@ -67,9 +67,7 @@ async def process_message(
 
         await call_endpa('create_dialog_', dname=dlg_path, name=dlg_path.lstrip('/'), template=True, json=True)
         reply = await add_msg(content, msg_type='prompt', run=True, wait=True, dname=dlg_path)
-        log.info(f'回复 {user_id}: {reply[:10]}...')
         await send_text(user_id, reply)
 
     except Exception as e:
-        log.info(f'❌ 处理失败: {e}')
         await send_text(user_id, '⚠️ 处理失败，请稍后重试')
