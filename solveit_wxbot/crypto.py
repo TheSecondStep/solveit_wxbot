@@ -38,7 +38,7 @@ def decrypt(
 ) -> tuple:
     "Decrypt a WeCom message; returns `(xml_text, corp_id)`."
     dec = Cipher(algorithms.AES(AES_KEY), modes.CBC(AES_KEY[:16])).decryptor()
-    raw = pkcs7_unpad(dec.update(base64.b64decode(encrypted)) + dec.finalize())
+    raw = _pkcs7_unpad(dec.update(base64.b64decode(encrypted)) + dec.finalize())
     n = struct.unpack('>I', raw[16:20])[0]
     return raw[20:20+n].decode(), raw[20+n:].decode()
 
@@ -47,6 +47,6 @@ def encrypt(
 ) -> str:
     "Encrypt `xml` using AES-256-CBC for WeCom; returns a Base64 string."
     msg = xml.encode()
-    body = pkcs7_pad(os.urandom(16) + struct.pack('>I', len(msg)) + msg + CORP_ID.encode())
+    body = _pkcs7_pad(os.urandom(16) + struct.pack('>I', len(msg)) + msg + CORP_ID.encode())
     enc = Cipher(algorithms.AES(AES_KEY), modes.CBC(AES_KEY[:16])).encryptor()
     return base64.b64encode(enc.update(body) + enc.finalize()).decode()

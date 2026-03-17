@@ -37,7 +37,7 @@ async def archive_dialog(
     src = DATAPATH / f'{dlg_path.lstrip("/")}.ipynb'
     if not src.exists(): return False
 
-    summary = await get_summary(dlg_path)
+    summary = await _get_summary(dlg_path)
     await call_endpa('stop_kernel_', dname=dlg_path, name=dlg_path.lstrip('/'), json=True)
 
     ts = datetime.now().strftime('%Y%m%d_%H%M')
