@@ -56,9 +56,10 @@ from solveit_wxbot.app import *
 srv = start_bot()
 ```
 
+    INFO:     Started server process [4584]
+
     🚀 Webhook 服务已启动 (port 8000)
 
-    INFO:     Started server process [4584]
     INFO:     Waiting for application startup.
     INFO:     Application startup complete.
     INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

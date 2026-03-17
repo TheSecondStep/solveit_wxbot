@@ -57,4 +57,5 @@ async def send_text(
                 'touser': user_id, 'msgtype': 'text',
                 'agentid': int(AGENT_ID), 'text': {'content': text[i:i+CHUNK_SIZE]}})
             if (d := r.json()).get('errcode', 0) != 0:
-                import logging; logging.getLogger('wecom').info(f"⚠️ 发送失败: {d}")
+                print(f"⚠️ 发送失败: {d}")
+
