@@ -9,13 +9,13 @@ __all__ = ['CORP_ID', 'SECRET', 'AGENT_ID', 'TOKEN', 'AES_KEY', 'CHUNK_SIZE', 'D
 import base64, os
 
 # WeCom credentials
-CORP_ID  = os.environ['WECOM_CORP_ID']    # Enterprise ID
-SECRET   = os.environ['WECOM_SECRET']     # App secret
-AGENT_ID = os.environ['WECOM_AGENT_ID']  # App agent ID
-TOKEN    = os.environ['WECOM_TOKEN']      # Webhook token
+CORP_ID  = os.environ.get('WECOM_CORP_ID', '')    # Enterprise ID
+SECRET   = os.environ.get('WECOM_SECRET', '')     # App secret
+AGENT_ID = os.environ.get('WECOM_AGENT_ID', '')  # App agent ID
+TOKEN    = os.environ.get('WECOM_TOKEN', '')      # Webhook token
 
 # AES key requires padding to valid base64 length before decoding
-AES_KEY = base64.b64decode(os.environ['WECOM_AES_KEY'] + '=')
+AES_KEY = base64.b64decode(os.environ.get('WECOM_AES_KEY', '') + '=')
 
 # Tuneable constants
 CHUNK_SIZE   = 680  # Max chars per WeCom message segment
