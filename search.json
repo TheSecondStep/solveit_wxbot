@@ -1,0 +1,212 @@
+[
+  {
+    "objectID": "config.html",
+    "href": "config.html",
+    "title": "Config",
+    "section": "",
+    "text": "所有凭据均从环境变量读取，避免硬编码敏感信息。启动前需在容器或 .env 中设置以下变量：\n\n\n\n变量名\n说明\n\n\n\n\nWECOM_CORP_ID\n企业 ID\n\n\nWECOM_SECRET\n应用 Secret\n\n\nWECOM_AGENT_ID\n应用 Agent ID\n\n\nWECOM_TOKEN\n回调 Token\n\n\nWECOM_AES_KEY\n消息加解密密钥（43位，无需末尾 =）",
+    "crumbs": [
+      "Config"
+    ]
+  },
+  {
+    "objectID": "dialog.html",
+    "href": "dialog.html",
+    "title": "Dialog",
+    "section": "",
+    "text": "每个用户对应一个独立的 solveit dialog（路径 /wecom/users/{user_id}/chat），实现多用户隔离。历史会话可归档保留，/new 指令触发归档并开启新会话。",
+    "crumbs": [
+      "Dialog"
+    ]
+  },
+  {
+    "objectID": "dialog.html#ai-摘要生成",
+    "href": "dialog.html#ai-摘要生成",
+    "title": "Dialog",
+    "section": "AI 摘要生成",
+    "text": "AI 摘要生成\n归档前向 AI 请求一个不超过10字的主题摘要，用于归档文件命名，方便日后检索。失败时回退为 untitled。",
+    "crumbs": [
+      "Dialog"
+    ]
+  },
+  {
+    "objectID": "dialog.html#会话归档",
+    "href": "dialog.html#会话归档",
+    "title": "Dialog",
+    "section": "会话归档",
+    "text": "会话归档\narchive_dialog 生成摘要、停止 dialog 内核，并将 .ipynb 文件移至 archive/ 子目录，文件名格式为 YYYYMMDD_HHMM_摘要.ipynb。\n\nsource\n\narchive_dialog\n\nasync def archive_dialog(\n    user_id:str, # WeCom user ID whose active dialog should be archived\n)-&gt;bool:\n\nGenerate an AI summary, stop the dialog, and move its .ipynb to the archive folder.",
+    "crumbs": [
+      "Dialog"
+    ]
+  },
+  {
+    "objectID": "dialog.html#消息路由",
+    "href": "dialog.html#消息路由",
+    "title": "Dialog",
+    "section": "消息路由",
+    "text": "消息路由\nprocess_message 是核心入口：收到 /new 时归档旧会话并创建新 dialog；其他消息则追加为 prompt 并将 AI 回复发回给用户。\n\nsource\n\nprocess_message\n\nasync def process_message(\n    user_id:str, # WeCom sender ID\n    content:str, # Plain-text message body\n):\n\nRoute messages: ‘/new’ archives and resets the session; anything else is forwarded to AI.",
+    "crumbs": [
+      "Dialog"
+    ]
+  },
+  {
+    "objectID": "crypto.html",
+    "href": "crypto.html",
+    "title": "Crypto",
+    "section": "",
+    "text": "WeCom 使用 AES-256-CBC 加密，要求明文长度为块大小（32字节）的整数倍。_pkcs7_pad 在末尾追加填充字节，_pkcs7_unpad 则将其还原。",
+    "crumbs": [
+      "Crypto"
+    ]
+  },
+  {
+    "objectID": "crypto.html#pkcs7-填充",
+    "href": "crypto.html#pkcs7-填充",
+    "title": "Crypto",
+    "section": "",
+    "text": "WeCom 使用 AES-256-CBC 加密，要求明文长度为块大小（32字节）的整数倍。_pkcs7_pad 在末尾追加填充字节，_pkcs7_unpad 则将其还原。",
+    "crumbs": [
+      "Crypto"
+    ]
+  },
+  {
+    "objectID": "crypto.html#消息签名",
+    "href": "crypto.html#消息签名",
+    "title": "Crypto",
+    "section": "消息签名",
+    "text": "消息签名\nWeCom 通过对若干字段排序后拼接再 SHA1 哈希来验证请求来源。msg_sig 封装了这一逻辑，供 URL 验证和消息接收两处复用。\n\nsource\n\nmsg_sig\n\ndef msg_sig(\n    parts:str, # Strings to sort, concatenate, and SHA1-hash\n)-&gt;str:\n\nWeCom message signature: sort parts, join, and return SHA1 hex digest.",
+    "crumbs": [
+      "Crypto"
+    ]
+  },
+  {
+    "objectID": "crypto.html#加解密",
+    "href": "crypto.html#加解密",
+    "title": "Crypto",
+    "section": "加解密",
+    "text": "加解密\ndecrypt 将 WeCom 下发的 Base64 密文还原为 XML 明文和企业 ID；encrypt 则将明文 XML 加密为 Base64，用于被动回复。两者均使用 AES-256-CBC，IV 取自 AES_KEY 前16字节。\n\nsource\n\nencrypt\n\ndef encrypt(\n    xml:str, # Plaintext XML to encrypt for a WeCom passive reply\n)-&gt;str:\n\nEncrypt xml using AES-256-CBC for WeCom; returns a Base64 string.\n\nsource\n\n\ndecrypt\n\ndef decrypt(\n    encrypted:str, # Base64-encoded AES-256-CBC ciphertext from WeCom\n)-&gt;tuple:\n\nDecrypt a WeCom message; returns (xml_text, corp_id).",
+    "crumbs": [
+      "Crypto"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "solveit_wxbot",
+    "section": "",
+    "text": "solveit_wxbot 是一个将 Solveit 接入企业微信的 Webhook 服务。借助企业微信的「微信插件」功能，用户无需安装企业微信客户端，直接在个人微信中即可与 AI 对话。",
+    "crumbs": [
+      "solveit_wxbot"
+    ]
+  },
+  {
+    "objectID": "index.html#usage",
+    "href": "index.html#usage",
+    "title": "solveit_wxbot",
+    "section": "Usage",
+    "text": "Usage\n\nInstallation\nInstall latest from pypi\n$ pip install solveit_wxbot\n\n\nDocumentation\nDocumentation can be found hosted on this GitHub repository’s pages. Additionally you can find package manager specific guidelines on pypi respectively.",
+    "crumbs": [
+      "solveit_wxbot"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "solveit_wxbot",
+    "section": "How to use",
+    "text": "How to use\n企业微信申请以及配置请选看相关章节openclaw接入个人微信\n\nConfiguration\n启动前需将企业微信的凭据设置到环境变量。\nimport os\n\nos.environ['WECOM_CORP_ID']  = 'ww1234567890abcdef'      # 企业 ID（在「我的企业」页面获取）\nos.environ['WECOM_SECRET']   = 'your-app-secret'          # 自建应用的 Secret\nos.environ['WECOM_AGENT_ID'] = '1000002'                   # 自建应用的 AgentId\nos.environ['WECOM_TOKEN']    = 'your-callback-token'       # 接收消息 API 中设置的 Token\nos.environ['WECOM_AES_KEY']  = 'your-43-char-encoding-aes-key'  # 接收消息 API 中设置的 EncodingAESKey\n\n\nQuick start\n配置完成后，导入模块并启动 Webhook 服务：\n\nfrom solveit_wxbot.app import *\n\n\nsrv = start_bot()\n\nINFO:     Started server process [9574]\nINFO:     Waiting for application startup.\nINFO:     Application startup complete.\nINFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)\n\n\n如需停止服务，调用 stop_bot 并传入启动时返回的服务器对象：\n\nstop_bot(srv)\n\nINFO:     Shutting down\nINFO:     Waiting for application shutdown.\nINFO:     Application shutdown complete.\nINFO:     Finished server process [9574]\n\n\n\n\nDeploy on Solveit\n要让 bot 在 Solveit 实例启动时自动运行，在 AUTORUN 文件夹下创建一个 Dialog，添加以下两条代码消息并保存即可。Solveit 会在每次实例启动时自动执行 AUTORUN 中所有 Dialog 的代码消息。\n第一条——设置环境变量并导入模块：\nimport os\n\nos.environ['WECOM_CORP_ID']  = 'your-corp-id'\nos.environ['WECOM_SECRET']   = 'your-secret'\nos.environ['WECOM_AGENT_ID'] = 'your-agent-id'\nos.environ['WECOM_TOKEN']    = 'your-token'\nos.environ['WECOM_AES_KEY']  = 'your-aes-key'\n\nfrom solveit_wxbot.app import *\n第二条——启动服务：\nsrv = start_bot()\n保存后，每次 Solveit 实例重启都会自动启动 WeChat bot。",
+    "crumbs": [
+      "solveit_wxbot"
+    ]
+  },
+  {
+    "objectID": "app.html",
+    "href": "app.html",
+    "title": "App",
+    "section": "",
+    "text": "WeCom 在未收到及时响应时会重发消息。_is_dup 用内存字典记录最近 DEDUP_WINDOW 秒内已处理的 MsgId，同时清理过期条目，防止重复触发 AI 调用。",
+    "crumbs": [
+      "App"
+    ]
+  },
+  {
+    "objectID": "app.html#消息去重",
+    "href": "app.html#消息去重",
+    "title": "App",
+    "section": "",
+    "text": "WeCom 在未收到及时响应时会重发消息。_is_dup 用内存字典记录最近 DEDUP_WINDOW 秒内已处理的 MsgId，同时清理过期条目，防止重复触发 AI 调用。",
+    "crumbs": [
+      "App"
+    ]
+  },
+  {
+    "objectID": "app.html#xml-解析",
+    "href": "app.html#xml-解析",
+    "title": "App",
+    "section": "XML 解析",
+    "text": "XML 解析\nWeCom 消息体为 XML 格式，_parse_xml 将其转为普通字典，简化后续字段提取。",
+    "crumbs": [
+      "App"
+    ]
+  },
+  {
+    "objectID": "app.html#webhook-路由",
+    "href": "app.html#webhook-路由",
+    "title": "App",
+    "section": "Webhook 路由",
+    "text": "Webhook 路由\n辅助函数： - _verify_and_decrypt：校验签名并解密 WeCom 消息体，返回 XML 文本。 - _extract_msg：从解密 XML 中提取 (user_id, content, msg_id)，支持 text、image、link 消息类型。\n路由： - GET /wecom：WeCom 服务器 URL 验证，校验签名后返回解密的 echostr。 - POST /wecom：接收加密消息，验签、解密、去重后，将消息异步交给 process_message 处理；图片消息传递图片 URL，链接消息传递链接地址，不支持的类型回复提示文字，立即返回空响应以满足 WeCom 3 秒超时要求。",
+    "crumbs": [
+      "App"
+    ]
+  },
+  {
+    "objectID": "app.html#服务启动与停止",
+    "href": "app.html#服务启动与停止",
+    "title": "App",
+    "section": "服务启动与停止",
+    "text": "服务启动与停止\nstart_bot 在后台守护线程中运行 uvicorn，返回 server 实例供后续调用 stop_bot 优雅关闭，便于在 notebook 中交互式控制服务生命周期。\n\nsource\n\nstart_bot\n\ndef start_bot(\n    \n)-&gt;Server:\n\nStart the uvicorn server in a daemon thread and return the server instance.\n\nsource\n\n\nstop_bot\n\ndef stop_bot(\n    server:Server\n)-&gt;None:\n\nSignal the uvicorn server to shut down gracefully.",
+    "crumbs": [
+      "App"
+    ]
+  },
+  {
+    "objectID": "api.html",
+    "href": "api.html",
+    "title": "API",
+    "section": "",
+    "text": "WeCom 客户端不渲染 Markdown，发送前需将 AI 回复中的代码块、加粗、标题、列表、链接等语法替换为纯文本或简单符号。",
+    "crumbs": [
+      "API"
+    ]
+  },
+  {
+    "objectID": "api.html#markdown-清理",
+    "href": "api.html#markdown-清理",
+    "title": "API",
+    "section": "",
+    "text": "WeCom 客户端不渲染 Markdown，发送前需将 AI 回复中的代码块、加粗、标题、列表、链接等语法替换为纯文本或简单符号。",
+    "crumbs": [
+      "API"
+    ]
+  },
+  {
+    "objectID": "api.html#access-token-管理",
+    "href": "api.html#access-token-管理",
+    "title": "API",
+    "section": "Access Token 管理",
+    "text": "Access Token 管理\nWeCom Access Token 有效期约2小时，通过模块级缓存 _token_cache 避免频繁请求。get_access_token 在到期前 TOKEN_BUFFER 秒自动刷新。",
+    "crumbs": [
+      "API"
+    ]
+  },
+  {
+    "objectID": "api.html#消息发送",
+    "href": "api.html#消息发送",
+    "title": "API",
+    "section": "消息发送",
+    "text": "消息发送\nWeCom 单条消息有字符限制，send_text 按 CHUNK_SIZE 自动分段发送，并在每段失败时记录日志而不中断后续分段。\n\nsource\n\nsend_text\n\nasync def send_text(\n    user_id:str, # WeCom recipient user ID\n    text:str, # Message text; Markdown is stripped automatically\n):\n\nSend text via the WeCom API, chunking into CHUNK_SIZE-char segments.",
+    "crumbs": [
+      "API"
+    ]
+  }
+]
