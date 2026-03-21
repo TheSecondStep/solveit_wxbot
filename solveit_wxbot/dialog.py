@@ -9,7 +9,7 @@ __all__ = ['archive_dialog', 'process_message']
 import re, shutil
 from datetime import datetime
 from pathlib import Path
-from dialoghelper import call_endpa, add_msg
+from dialoghelper import create_or_run_dialog, add_msg, stop_dialog
 from .api import send_text
 
 _DATAPATH = Path('/app/data')
@@ -38,7 +38,7 @@ async def archive_dialog(
     if not src.exists(): return False
 
     summary = await _get_summary(dlg_path)
-    await call_endpa('stop_kernel_', dname=dlg_path, name=dlg_path.lstrip('/'), json=True)
+    await stop_dialog(dlg_path)
 
     ts = datetime.now().strftime('%Y%m%d_%H%M')
     dest_dir = _DATAPATH / f'wecom/users/{user_id}/archive'
@@ -62,11 +62,11 @@ async def process_message(
                 if not ok: return
             else:
                 await send_text(user_id, '✅ 新会话已开启')
-            await call_endpa('create_dialog_', dname=dlg_path, name=dlg_path.lstrip('/'), template=True, json=True)
+            await create_or_run_dialog(dlg_path, template=True)
             return
 
-        await call_endpa('create_dialog_', dname=dlg_path, name=dlg_path.lstrip('/'), template=True, json=True)
-        reply = await add_msg(content, msg_type='prompt', run=True, wait=True, dname=dlg_path)
+        await create_or_run_dialog(dlg_path, template=True)
+        reply = await add_msg(f"{user_id}:{content}", msg_type='prompt', run=True, wait=True, dname=dlg_path)
         await send_text(user_id, reply)
 
     except Exception as e:
